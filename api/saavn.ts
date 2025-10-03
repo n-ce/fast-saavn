@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import crypto from 'node-forge'; // Added import
+import crypto from 'node-forge';
 
 // createDownloadLinks function copied from jiosaavn-api/src/common/helpers/link.helper.ts
 const createDownloadLinks = (encryptedMediaUrl: string) => {
@@ -29,6 +29,60 @@ const createDownloadLinks = (encryptedMediaUrl: string) => {
   }));
 };
 
+// createImageLinks function copied from jiosaavn-api/src/common/helpers/link.helper.ts
+const createImageLinks = (link: string) => {
+  if (!link) return [];
+
+  const qualities = ['50x50', '150x150', '500x500'];
+  const qualityRegex = /150x150|50x50/;
+  const protocolRegex = /^http:\/\//;
+
+  return qualities.map((quality) => ({
+    quality,
+    url: link.replace(qualityRegex, quality).replace(protocolRegex, 'https://')
+  }));
+};
+
+// createArtistMapPayload function copied from jiosaavn-api/src/modules/artists/helpers/artist.helper.ts
+const createArtistMapPayload = (artist: any) => ({
+  id: artist.id,
+  name: artist.name,
+  role: artist.role,
+  image: createImageLinks(artist.image),
+  type: artist.type,
+  url: artist.perma_url
+});
+
+// createSongPayload function copied from jiosaavn-api/src/modules/songs/helpers/song.helper.ts
+const createSongPayload = (song: any) => ({
+  id: song.id,
+  name: song.title,
+  type: song.type,
+  year: song.year || null,
+  releaseDate: song.more_info?.release_date || null,
+  duration: song.more_info?.duration ? Number(song.more_info?.duration) : null,
+  label: song.more_info?.label || null,
+  explicitContent: song.explicit_content === '1',
+  playCount: song.play_count ? Number(song.play_count) : null,
+  language: song.language,
+  hasLyrics: song.more_info?.has_lyrics === 'true',
+  lyricsId: song.more_info?.lyrics_id || null,
+  url: song.perma_url,
+  copyright: song.more_info?.copyright_text || null,
+  album: {
+    id: song.more_info?.album_id || null,
+    name: song.more_info?.album || null,
+    url: song.more_info?.album_url || null
+  },
+  artists: {
+    primary: song.more_info?.artistMap?.primary_artists?.map(createArtistMapPayload),
+    featured: song.more_info?.artistMap?.featured_artists?.map(createArtistMapPayload),
+    all: song.more_info?.artistMap?.artists?.map(createArtistMapPayload)
+  },
+  image: createImageLinks(song.image),
+  downloadUrl: createDownloadLinks(song.more_info?.encrypted_media_url)
+});
+
 
 export default async function (req: VercelRequest, res: VercelResponse) {
   const title = req.query.title as string;
@@ -38,7 +92,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     return res.status(400).send('Missing title or artist parameters');
   }
 
-  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=autocomplete.get&query=${encodeURIComponent(`${title} ${artist}`)}`;
+  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=1&n=1`;
 
   try {
     const response = await fetch(jioSaavnApiUrl, {
@@ -52,40 +106,19 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     }
     const data = await response.json();
 
-    const normalizeString = (str: string) => str.normalize("NFD").replace(/[̀-ͯ]/g, "");
-
-    let matchingTrack = null;
-
-    // Prioritize topquery results
-    if (data.topquery && data.topquery.data && data.topquery.data.length > 0) {
-      matchingTrack = data.topquery.data.find((track: any) =>
-        normalizeString(title).toLowerCase().startsWith(normalizeString(track.title).toLowerCase()) &&
-        (normalizeString(track.more_info?.primary_artists || '').toLowerCase().includes(normalizeString(artist).toLowerCase()) ||
-         normalizeString(track.more_info?.singers || '').toLowerCase().includes(normalizeString(artist).toLowerCase()))
-      );
-    }
-
-    // If not found in topquery, check songs results
-    if (!matchingTrack && data.songs && data.songs.data && data.songs.data.length > 0) {
-      matchingTrack = data.songs.data.find((track: any) =>
-        normalizeString(title).toLowerCase().startsWith(normalizeString(track.title).toLowerCase()) &&
-        (normalizeString(track.more_info?.primary_artists || '').toLowerCase().includes(normalizeString(artist).toLowerCase()) ||
-         normalizeString(track.more_info?.singers || '').toLowerCase().includes(normalizeString(artist).toLowerCase()))
-      );
-    }
-
-    if (!matchingTrack) {
+    // The search.getResults endpoint returns data in a 'results' array
+    if (!data.results || data.results.length === 0) {
       return res.status(404).send('Music stream not found in JioSaavn results');
     }
 
-    // Now, construct the downloadUrl using createDownloadLinks
-    const downloadUrl = createDownloadLinks(matchingTrack.more_info.encrypted_media_url);
+    // Take the first result and apply createSongPayload
+    const rawSong = data.results[0];
+    const processedSong = createSongPayload(rawSong);
 
-    // Return the matching track with the constructed downloadUrl
-    return res.status(200).json({ ...matchingTrack, downloadUrl });
+    return res.status(200).json(processedSong);
 
   } catch (error: any) {
-    console.error("Error in fast-saavn API:", error); // Keep logging for local debugging if user runs it
+    console.error("Error in fast-saavn API:", error);
     return res.status(500).send(error.message || 'Internal Server Error');
   }
 }
