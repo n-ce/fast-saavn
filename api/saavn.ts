@@ -92,7 +92,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     return res.status(400).send('Missing title or artist parameters');
   }
 
-  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=1&n=1`;
+  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=1&n=10`; // Fetch 10 results
 
   try {
     const response = await fetch(jioSaavnApiUrl, {
@@ -106,14 +106,23 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     }
     const data = await response.json();
 
-    // The search.getResults endpoint returns data in a 'results' array
+    const normalizeString = (str: string) => str.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
     if (!data.results || data.results.length === 0) {
       return res.status(404).send('Music stream not found in JioSaavn results');
     }
 
-    // Take the first result and apply createSongPayload
-    const rawSong = data.results[0];
-    const processedSong = createSongPayload(rawSong);
+    const matchingTrack = data.results.find((track: any) =>
+      normalizeString(title).toLowerCase().startsWith(normalizeString(track.title).toLowerCase()) &&
+      (normalizeString(track.more_info?.primary_artists || '').toLowerCase().includes(normalizeString(artist).toLowerCase()) ||
+       normalizeString(track.more_info?.singers || '').toLowerCase().includes(normalizeString(artist).toLowerCase()))
+    );
+
+    if (!matchingTrack) {
+      return res.status(404).send('Music stream not found in JioSaavn results');
+    }
+
+    const processedSong = createSongPayload(matchingTrack);
 
     return res.status(200).json(processedSong);
 
