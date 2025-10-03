@@ -7,9 +7,6 @@
     "start": "vercel dev"
   },
   "dependencies": {
-    "@vercel/node": "^3.0.0"
-  },
-  "engines": {
-    "node": "18.x"
+    "@vercel/node": "^5.3.24"
   }
 }
