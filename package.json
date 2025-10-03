@@ -1,0 +1,12 @@
+{
+  "name": "fast-saavn",
+  "version": "1.0.0",
+  "description": "A Vercel API for JioSaavn",
+  "main": "api/saavn.ts",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.0.0"
+  }
+}
