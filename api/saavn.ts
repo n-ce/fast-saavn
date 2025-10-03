@@ -112,11 +112,17 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       return res.status(404).send('Music stream not found in JioSaavn results');
     }
 
-    const matchingTrack = data.results.find((track: any) =>
-      normalizeString(title).toLowerCase().startsWith(normalizeString(track.title).toLowerCase()) &&
-      (normalizeString(track.more_info?.primary_artists || '').toLowerCase().includes(normalizeString(artist).toLowerCase()) ||
-       normalizeString(track.more_info?.singers || '').toLowerCase().includes(normalizeString(artist).toLowerCase()))
-    );
+    const matchingTrack = data.results.find((track: any) => {
+      const primaryArtists = track.more_info?.primary_artists?.split(',').map((name: string) => name.trim()) || [];
+      const singers = track.more_info?.singers?.split(',').map((name: string) => name.trim()) || [];
+      const allArtists = [...primaryArtists, ...singers];
+
+      const artistMatches = allArtists.some((trackArtistName: string) =>
+        normalizeString(artist).toLowerCase().startsWith(normalizeString(trackArtistName).toLowerCase())
+      );
+
+      return normalizeString(title).toLowerCase().startsWith(normalizeString(track.title).toLowerCase()) && artistMatches;
+    });
 
     if (!matchingTrack) {
       return res.status(404).send('Music stream not found in JioSaavn results');
