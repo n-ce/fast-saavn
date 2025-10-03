@@ -92,7 +92,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     return res.status(400).send('Missing title or artist parameters');
   }
 
-  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=1&n=10`; // Fetch 10 results
+  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=0&n=10`; // Fetch 10 results, starting from page 0
 
   try {
     const response = await fetch(jioSaavnApiUrl, {
