@@ -48,7 +48,22 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       return res.status(404).send('Music stream not found in JioSaavn results');
     }
 
-    return res.status(200).json(matchingTrack); // Return the single processed matchingTrack
+    const finalResponse = {
+      name: matchingTrack.name,
+      year: matchingTrack.year,
+      copyright: matchingTrack.copyright,
+      duration: matchingTrack.duration,
+      label: matchingTrack.label,
+      albumName: matchingTrack.album?.name || null,
+      artists: [
+        ...(matchingTrack.artists?.primary || []),
+        ...(matchingTrack.artists?.featured || []),
+        ...(matchingTrack.artists?.all || [])
+      ].map((artist: any) => ({ name: artist.name, role: artist.role })),
+      downloadUrl: matchingTrack.downloadUrl?.[matchingTrack.downloadUrl.length - 1]?.url || null // Highest quality URL
+    };
+
+    return res.status(200).json(finalResponse);
 
   } catch (error: any) {
     console.error("Error in fast-saavn API:", error);

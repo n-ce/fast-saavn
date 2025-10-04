@@ -14,7 +14,7 @@ Directly integrating with unofficial APIs like JioSaavn's can present several ch
 
 The `fast-saavn` project addresses these challenges by acting as an intermediary layer:
 
-1.  **Simplified Search Endpoint**: It exposes a single, clean API endpoint (`/api/saavn`) that accepts `title` and `artist` parameters.
+1.  **Simplified Search Endpoint**: It exposes a single, clean API endpoint (`/api/find`) that accepts `title` and `artist` parameters.
 2.  **Intelligent JioSaavn API Interaction**: Internally, it intelligently queries the appropriate JioSaavn endpoint (`search.getResults`) with optimized parameters (`p=0`, `n=10`) to fetch a comprehensive list of potential song matches.
 3.  **Robust Finder Logic**: It incorporates a sophisticated finder mechanism that processes the raw JioSaavn results, applying normalization and matching logic (similar to established client-side parsers) to identify the most relevant song based on the provided `title` and `artist`.
 4.  **Secure Media Decryption**: It handles the decryption of JioSaavn's `encrypted_media_url` using `node-forge`, providing direct, playable `downloadUrl` links in various quality formats.
@@ -25,11 +25,11 @@ By centralizing these complexities, `fast-saavn` allows client applications to s
 
 ## Usage
 
-To use this API, send a `GET` request to the `/api/saavn` endpoint with `title` and `artist` query parameters.
+To use this API, send a `GET` request to the `/api/find` endpoint with `title` and `artist` query parameters.
 
 **Example Request:**
 ```
-GET /api/saavn?title=Sapphire&artist=Ed%20Sheeran
+GET /api/find?title=Sapphire&artist=Ed%20Sheeran
 ```
 
 **Example Response (Success):**
