@@ -10,7 +10,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     return res.status(400).send('Missing title or artist parameters');
   }
 
-  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`.replace(/&/g, ''))}&p=0&n=10`; // Fetch 10 results, starting from page 0
+  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=0&n=10`; // Fetch 10 results, starting from page 0
 
   try {
     const response = await fetch(jioSaavnApiUrl, {
@@ -41,9 +41,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         normalizeString(trackArtistName).toLowerCase().startsWith(normalizeString(artist).toLowerCase())
       );
 
-      const clean = (str: string) => normalizeString(str).toLowerCase().replace(/&/g, "");
-
-      return clean(track.name).startsWith(clean(title)) && artistMatches;
+      return normalizeString(track.name).toLowerCase().startsWith(normalizeString(title).toLowerCase()) && artistMatches;
     });
 
     if (!matchingTrack) {
