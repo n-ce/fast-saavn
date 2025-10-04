@@ -21,10 +21,7 @@ export const createDownloadLinks = (encryptedMediaUrl: string) => {
   decipher.finish();
   const decryptedLink = decipher.output.getBytes();
 
-  return qualities.map((quality) => ({
-    quality: quality.bitrate,
-    url: decryptedLink.replace('_96', quality.id)
-  }));
+  return decryptedLink.replace('http:', 'https:'); // Ensure https
 };
 
 export const createImageLinks = (link: string) => {
