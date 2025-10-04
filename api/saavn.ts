@@ -106,17 +106,31 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     }
     const data = await response.json();
 
+    const normalizeString = (str: string) => str.normalize("NFD").replace(/[̀-ͯ]/g, ""); // Re-introduce normalizeString
+
     if (!data.results || data.results.length === 0) {
       return res.status(404).send('Music stream not found in JioSaavn results');
     }
 
     const processedResults = data.results.map((rawSong: any) => createSongPayload(rawSong));
 
-    return res.status(200).json({
-      total: processedResults.length,
-      start: 0,
-      results: processedResults
+    const matchingTrack = processedResults.find((track: any) => { // Find on processedResults
+      const primaryArtists = track.artists?.primary?.map((artist: any) => artist.name.trim()) || []; // Access processed artists structure
+      const singers = track.artists?.all?.filter((artist: any) => artist.role === 'singer').map((artist: any) => artist.name.trim()) || []; // Access processed artists structure
+      const allArtists = [...primaryArtists, ...singers];
+
+      const artistMatches = allArtists.some((trackArtistName: string) =>
+        normalizeString(artist).toLowerCase().startsWith(normalizeString(trackArtistName).toLowerCase())
+      );
+
+      return normalizeString(title).toLowerCase().startsWith(normalizeString(track.name).toLowerCase()) && artistMatches; // Use track.name for processed song
     });
+
+    if (!matchingTrack) {
+      return res.status(404).send('Music stream not found in JioSaavn results');
+    }
+
+    return res.status(200).json(matchingTrack); // Return the single processed matchingTrack
 
   } catch (error: any) {
     console.error("Error in fast-saavn API:", error);
