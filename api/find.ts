@@ -1,16 +1,31 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createSongPayload } from './helpers/song.helper'; // Import createSongPayload
 
+const parseDurationToSeconds = (durationStr: string): number | null => {
+  const parts = durationStr.split(':').map(Number);
+  if (parts.some(isNaN)) return null; // Invalid parts
+
+  if (parts.length === 2) { // mm:ss
+    const [minutes, seconds] = parts;
+    return minutes * 60 + seconds;
+  } else if (parts.length === 3) { // hh:mm:ss
+    const [hours, minutes, seconds] = parts;
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+  return null; // Invalid format
+};
+
 
 export default async function (req: VercelRequest, res: VercelResponse) {
   const title = req.query.title as string;
   const artist = req.query.artist as string;
+  const durationParam = req.query.duration as string;
 
   if (!title || !artist) {
     return res.status(400).send('Missing title or artist parameters');
   }
 
-  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title} ${artist}`)}&p=0&n=10`; // Fetch 10 results, starting from page 0
+  const jioSaavnApiUrl = `https://www.jiosaavn.com/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0&__call=search.getResults&q=${encodeURIComponent(`${title.replace(/\(.*?\)/g, '')} ${artist}`)}&p=0&n=10`; // Fetch 10 results, starting from page 0
 
   try {
     const response = await fetch(jioSaavnApiUrl, {
@@ -43,7 +58,20 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 
       const clean = (str: string) => normalizeString(str).toLowerCase().replace(/&amp;/g, ' ').replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
 
-      return clean(track.name).startsWith(clean(title)) && artistMatches;
+      const titleMatches = clean(track.name).startsWith(clean(title));
+
+      // Duration matching logic
+      let durationMatches = true;
+      if (durationParam) {
+        const targetDurationSeconds = parseDurationToSeconds(durationParam);
+        if (targetDurationSeconds !== null && track.duration !== null) {
+          durationMatches = Math.abs(track.duration - targetDurationSeconds) <= 2; // 2-second offset
+        } else {
+          durationMatches = false; // Invalid duration param or track duration
+        }
+      }
+
+      return titleMatches && artistMatches && durationMatches;
     });
 
     if (!matchingTrack) {
