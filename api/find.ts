@@ -60,7 +60,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         ...(matchingTrack.artists?.featured || []),
         ...(matchingTrack.artists?.all || [])
       ].map((artist: any) => ({ name: artist.name, role: artist.role })),
-      downloadUrl: matchingTrack.downloadUrl?.[matchingTrack.downloadUrl.length - 1]?.url || null // Highest quality URL
+      downloadUrl: matchingTrack.downloadUrl || null // Directly use the single string downloadUrl
     };
 
     return res.status(200).json(finalResponse);
