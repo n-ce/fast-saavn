@@ -41,7 +41,9 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         normalizeString(trackArtistName).toLowerCase().startsWith(normalizeString(artist).toLowerCase())
       );
 
-      return normalizeString(track.name).toLowerCase().startsWith(normalizeString(title).toLowerCase()) && artistMatches;
+      const clean = (str: string) => normalizeString(str).toLowerCase().replace(/&amp;/g, ' ').replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
+
+      return clean(track.name).startsWith(clean(title)) && artistMatches;
     });
 
     if (!matchingTrack) {
