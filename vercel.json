@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [{ "source": "(.*)", "destination": "/api" }],
   "regions": ["bom1"],
-  "outputDirectory": "dist",
   "headers": [
     {
       "source": "(.*)",
@@ -22,14 +21,6 @@
         {
           "key": "Cache-Control",
           "value": "s-maxage=300, stale-while-revalidate"
-        },
-        {
-          "key": "Author",
-          "value": "Sumit Kolhe"
-        },
-        {
-          "key": "Github",
-          "value": "https://github.com/sumitkolhe/jiosaavn-api"
         }
       ]
     }
