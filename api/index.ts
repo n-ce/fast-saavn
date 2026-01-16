@@ -77,7 +77,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
       if (durationParam) {
         const targetDurationSeconds = parseDurationToSeconds(durationParam);
         if (targetDurationSeconds !== null && track.duration !== null) {
-          durationMatches = Math.abs(track.duration - targetDurationSeconds) <= 2;
+          durationMatches = Math.abs(track.duration - targetDurationSeconds) < 2;
         } else {
           durationMatches = false;
         }
