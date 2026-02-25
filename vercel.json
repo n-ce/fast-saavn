@@ -10,7 +10,6 @@
   "regions": [
     "bom1"
   ],
-  "outputDirectory": "dist",
   "headers": [
     {
       "source": "(.*)",
