@@ -1,14 +1,14 @@
 # Fast Saavn
 
-A lightweight, high-performance API proxy for JioSaavn, built with TypeScript and optimized for Vercel. This service specializes in resolving song titles and artists into direct JioSaavn media IDs.
+A lightweight, ultra-fast API proxy for JioSaavn, built with TypeScript and optimized for the **Bun** runtime on Vercel. This service specializes in resolving song titles and artists into direct JioSaavn media IDs with extreme efficiency.
 
 ## Features
 
+- **High Performance**: Powered by **Bun**, providing significantly faster startup and execution times compared to standard Node.js.
 - **Direct Media ID Extraction**: Returns the base path of the media file, which can be used to construct direct stream URLs.
 - **Smart Matching**: Implements normalization, fuzzy artist matching, and duration-based filtering to ensure the correct track is found.
-- **TripleDES Decryption**: Includes a custom, lightweight implementation of DES-ECB to decrypt JioSaavn's encrypted media URLs server-side.
-- **Vercel Optimized**: Configured for low-latency responses with edge caching and deployment in the `bom1` (Mumbai) region.
-- **CORS Enabled**: Ready to be consumed by web applications out of the box.
+- **Lightweight Crypto**: Self-contained TripleDES (DES-ECB) implementation for server-side media URL decryption without heavy dependencies.
+- **Vercel Optimized**: Deployed in the `bom1` (Mumbai) region with aggressive edge caching for minimal latency.
 
 ## API Usage
 
@@ -39,15 +39,19 @@ Returns a `text/plain` response containing the media ID/path.
 ```
 *Note: You can construct the full URL by appending the quality, e.g., `https://aac.saavncdn.com/342/65e9f0a2e7c9f3e4e9b9f9a2e7c9f3e4_160.mp4`*
 
-**Error (404 Not Found):**
-```text
-Music stream not found in JioSaavn results
-```
+## Architecture
 
-**Error (400 Bad Request):**
-```text
-Missing title or artist parameters
-```
+- **`api/index.ts`**: The primary entry point, adhering to Vercel's Bun convention using standard `Request` and `Response` objects.
+- **`api/_jioSaavn.ts`**: Internal utility for processing JioSaavn API responses. Prefixed with `_` to prevent Vercel from exposing it as a separate API route.
+- **`api/_*.ts`**: Modularized crypto utilities for TripleDES decryption, all prefixed with `_` for internal-only use.
+- **TypeScript Imports**: Optimized for Bun, utilizing direct `.ts` file extensions in imports for native resolution.
+
+## Deployment
+
+This project is optimized for **Vercel** with the following configuration:
+- **Runtime**: **Bun** (specified via `bunVersion: "1.x"` in `vercel.json`).
+- **Caching**: Aggressive edge caching with `s-maxage=86400` (1 day) and `stale-while-revalidate=3600` (1 hour).
+- **Region**: Pinned to `bom1` (Mumbai) for the lowest possible latency when communicating with JioSaavn's servers.
 
 ## Development
 
@@ -55,31 +59,17 @@ Missing title or artist parameters
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/fast-saavn.git
+   git clone https://github.com/n-ce/fast-saavn.git
    cd fast-saavn
    ```
-2. Install dependencies:
+2. Install dependencies (using Bun):
    ```bash
-   npm install
+   bun install
    ```
 
 ### Local Execution
 
 Run the Vercel development server:
 ```bash
-npm start
+vercel dev
 ```
-
-## Architecture
-
-- **`api/index.ts`**: The main and only entry point. Performs the search, matching, and response formatting.
-- **`api/_jioSaavn.ts`**: Internal utility for processing JioSaavn API responses. Prefixed with `_` to be ignored by Vercel's routing.
-- **`api/_*.ts`**: Self-contained TripleDES (DES-ECB) crypto utilities, moved from `api/crypto/` to the `api/` folder and prefixed with `_` for efficiency and to prevent exposure as API routes.
-- **Runtime**: Node.js on Vercel.
-
-## Deployment
-
-This project is designed to be deployed on **Vercel**.
-- The `vercel.json` ensures all requests are routed to the main API handler.
-- It includes aggressive caching with `s-maxage=86400` (1 day) and `stale-while-revalidate=3600` (1 hour).
-- It is pinned to the `bom1` region for proximity to JioSaavn's servers.
