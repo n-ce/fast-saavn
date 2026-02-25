@@ -20,7 +20,7 @@ const parseDurationToSeconds = (durationStr: string): number | null => {
 // --- API Route Handler (Vercel Bun Convention) ---
 
 export default async function handler(req: Request) {
-  const url = new URL(req.url);
+  const url = new URL(req.url, `http://${req.headers.get('host') || 'localhost'}`);
   const title = url.searchParams.get('title');
   const artist = url.searchParams.get('artist');
   const durationParam = url.searchParams.get('duration');
