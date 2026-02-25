@@ -19,8 +19,24 @@ const parseDurationToSeconds = (durationStr: string): number | null => {
 
 // --- API Route Handler (Vercel Bun Convention) ---
 
-export default async function handler(req: Request) {
-  const url = new URL(req.url, `http://${req.headers.get('host') || 'localhost'}`);
+export default async function handler(req: Request | any) {
+  // Robustly extract host and URL
+  const getHeader = (name: string) => {
+    if (req.headers && typeof req.headers.get === 'function') {
+      return req.headers.get(name);
+    }
+    return req.headers ? req.headers[name] : null;
+  };
+
+  const host = getHeader('host') || 'localhost';
+  let url: URL;
+  try {
+    url = new URL(req.url);
+  } catch (e) {
+    // Fallback for relative URLs (Node-style req)
+    url = new URL(req.url || '/', `http://${host}`);
+  }
+
   const title = url.searchParams.get('title');
   const artist = url.searchParams.get('artist');
   const durationParam = url.searchParams.get('duration');
