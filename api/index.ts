@@ -1,6 +1,87 @@
-import { createSongPayload, SaavnSong, SongPayload } from './_jioSaavn';
+import { createDecipheriv } from 'node:crypto';
+
+// --- Interfaces ---
+
+interface SaavnArtist {
+  id: string;
+  name: string;
+  role: string;
+  type: string;
+  perma_url: string;
+}
+
+interface SaavnSong {
+  id: string;
+  title: string;
+  more_info: {
+    duration: string | number;
+    encrypted_media_url: string;
+    artistMap: {
+      primary_artists: SaavnArtist[];
+      featured_artists: SaavnArtist[];
+      artists: SaavnArtist[];
+    };
+  };
+}
+
+interface ArtistPayload {
+  id: string;
+  name: string;
+  role: string;
+  type: string;
+  url: string;
+}
+
+interface SongPayload {
+  id: string;
+  name: string;
+  duration: number | null;
+  artists: {
+    primary: ArtistPayload[];
+    featured: ArtistPayload[];
+    all: ArtistPayload[];
+  };
+  downloadUrl: string;
+}
 
 // --- Helper Functions ---
+
+const decryptMediaUrl = (encryptedMediaUrl: string): string => {
+  if (!encryptedMediaUrl) return "";
+  const algorithm = 'des-ecb';
+  const key = Buffer.from('38346591', 'utf8');
+  try {
+    const decipher = createDecipheriv(algorithm, key, null);
+    let decrypted = decipher.update(encryptedMediaUrl, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted.trim().replace('http:', 'https:');
+  } catch (error) {
+    return "";
+  }
+};
+
+const createArtistPayload = (artist: SaavnArtist): ArtistPayload => ({
+  id: artist.id,
+  name: artist.name,
+  role: artist.role,
+  type: artist.type,
+  url: artist.perma_url
+});
+
+const createSongPayload = (song: SaavnSong): SongPayload => {
+  const info = song.more_info;
+  return {
+    id: song.id,
+    name: song.title,
+    duration: info?.duration ? Number(info.duration) : null,
+    artists: {
+      primary: info?.artistMap?.primary_artists?.map(createArtistPayload) || [],
+      featured: info?.artistMap?.featured_artists?.map(createArtistPayload) || [],
+      all: info?.artistMap?.artists?.map(createArtistPayload) || []
+    },
+    downloadUrl: decryptMediaUrl(info?.encrypted_media_url)
+  };
+};
 
 const parseDurationToSeconds = (durationStr: string): number | null => {
   if (!durationStr) return null;
@@ -57,7 +138,7 @@ export default {
 
       const matchingTrack = processedResults.find((track) => {
         const normalizeString = (str: string) => str.normalize("NFD").replace(/[̀-ͯ]/g, "");
-
+        
         const primaryArtists = track.artists?.primary?.map((a) => a.name.trim()) || [];
         const singers = track.artists?.all?.filter((a) => a.role === 'singer').map((a) => a.name.trim()) || [];
         const allArtists = [...primaryArtists, ...singers];

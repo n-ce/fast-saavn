@@ -5,9 +5,9 @@ A lightweight, ultra-fast API proxy for JioSaavn, built with TypeScript and opti
 ## Features
 
 - **High Performance**: Powered by **Bun**, providing significantly faster startup and execution times compared to standard Node.js.
+- **Zero External Dependencies**: All logic is self-contained in a single API route, utilizing native `node:crypto` for media decryption.
 - **Direct Media ID Extraction**: Returns the base path of the media file, which can be used to construct direct stream URLs.
 - **Smart Matching**: Implements normalization, fuzzy artist matching, and duration-based filtering to ensure the correct track is found.
-- **Lightweight Crypto**: Self-contained TripleDES (DES-ECB) implementation for server-side media URL decryption without heavy dependencies.
 - **Vercel Optimized**: Deployed in the `bom1` (Mumbai) region with aggressive edge caching for minimal latency.
 
 ## API Usage
@@ -41,10 +41,8 @@ Returns a `text/plain` response containing the media ID/path.
 
 ## Architecture
 
-- **`api/index.ts`**: The primary entry point, adhering to Vercel's Bun convention using standard `Request` and `Response` objects.
-- **`api/_jioSaavn.ts`**: Internal utility for processing JioSaavn API responses. Prefixed with `_` to prevent Vercel from exposing it as a separate API route.
-- **`api/_*.ts`**: Modularized crypto utilities for TripleDES decryption, all prefixed with `_` for internal-only use.
-- **TypeScript Imports**: Optimized for Bun, utilizing direct `.ts` file extensions in imports for native resolution.
+- **`api/index.ts`**: The complete, self-contained API route. Handles request parsing, JioSaavn API interaction, media URL decryption, and track matching.
+- **`node:crypto`**: Utilized for native TripleDES (DES-ECB) decryption, replacing custom implementations for better performance and maintainability.
 
 ## Deployment
 
@@ -62,14 +60,7 @@ This project is optimized for **Vercel** with the following configuration:
    git clone https://github.com/n-ce/fast-saavn.git
    cd fast-saavn
    ```
-2. Install dependencies (using Bun):
+2. Run locally (using Bun):
    ```bash
-   bun install
+   bun dev
    ```
-
-### Local Execution
-
-Run the Vercel development server:
-```bash
-vercel dev
-```
