@@ -1,6 +1,5 @@
 {
   "name": "fast-saavn",
-  "type": "module",
   "scripts": {
     "dev": "bun --watch api/index.ts",
     "start": "bun api/index.ts",
