@@ -1,4 +1,4 @@
-import { createSongPayload, SaavnSong, SongPayload } from './_jioSaavn.ts';
+import { createSongPayload, SaavnSong, SongPayload } from './_jioSaavn';
 
 // --- Helper Functions ---
 
@@ -57,7 +57,7 @@ export default {
 
       const matchingTrack = processedResults.find((track) => {
         const normalizeString = (str: string) => str.normalize("NFD").replace(/[̀-ͯ]/g, "");
-        
+
         const primaryArtists = track.artists?.primary?.map((a) => a.name.trim()) || [];
         const singers = track.artists?.all?.filter((a) => a.role === 'singer').map((a) => a.name.trim()) || [];
         const allArtists = [...primaryArtists, ...singers];
