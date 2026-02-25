@@ -1,112 +1,85 @@
-# Fast JioSaavn API Proxy
+# Fast Saavn
 
-This project (`fast-saavn`) serves as a lightweight, efficient proxy and wrapper for the unofficial JioSaavn API. It's designed to streamline the process of searching for songs and retrieving their playable media URLs, particularly for client-side applications that require simplified interaction with JioSaavn's services.
+A lightweight, high-performance API proxy for JioSaavn, built with TypeScript and optimized for Vercel. This service specializes in resolving song titles and artists into direct JioSaavn media IDs.
 
-## The Problem It Solves
+## Features
 
-Directly integrating with unofficial APIs like JioSaavn's can present several challenges:
--   **Complex API Interactions**: Understanding and correctly utilizing specific endpoints (e.g., `search.getResults` vs. `autocomplete.get`) and their required parameters.
--   **Data Processing**: Raw API responses often contain nested or inconsistently structured data that needs to be parsed and transformed into a more usable format.
--   **Encrypted Media URLs**: JioSaavn's media URLs are typically encrypted, requiring specific decryption logic to obtain playable links.
--   **Client-Side Overhead**: Performing these complex operations directly on the client-side can lead to increased bundle sizes, slower performance, and potential exposure of API keys or sensitive logic.
+- **Direct Media ID Extraction**: Returns the base path of the media file, which can be used to construct direct stream URLs.
+- **Smart Matching**: Implements normalization, fuzzy artist matching, and duration-based filtering to ensure the correct track is found.
+- **TripleDES Decryption**: Includes a custom, lightweight implementation of DES-ECB to decrypt JioSaavn's encrypted media URLs server-side.
+- **Vercel Optimized**: Configured for low-latency responses with edge caching and deployment in the `bom1` (Mumbai) region.
+- **CORS Enabled**: Ready to be consumed by web applications out of the box.
 
-## How It Works & What It Provides
+## API Usage
 
-The `fast-saavn` project addresses these challenges by acting as an intermediary layer:
+Send a `GET` request to the root endpoint with the following query parameters:
 
-1.  **Simplified Search Endpoint**: It exposes a single, clean API endpoint (`/api/find`) that accepts `title` and `artist` parameters.
-2.  **Intelligent JioSaavn API Interaction**: Internally, it intelligently queries the appropriate JioSaavn endpoint (`search.getResults`) with optimized parameters (`p=0`, `n=10`) to fetch a comprehensive list of potential song matches.
-3.  **Robust Finder Logic**: It incorporates a sophisticated finder mechanism that processes the raw JioSaavn results, applying normalization and matching logic (similar to established client-side parsers) to identify the most relevant song based on the provided `title` and `artist`.
-4.  **Secure Media Decryption**: It handles the decryption of JioSaavn's `encrypted_media_url` using `node-forge`, providing direct, playable `downloadUrl` links in various quality formats.
-5.  **Pre-processed Song Objects**: It transforms the raw JioSaavn data into a clean, consistent, and easily consumable song object format, reducing the parsing burden on the client-side application.
-6.  **Vercel Optimized**: Designed for serverless deployment on platforms like Vercel, ensuring scalability and low-latency responses.
+### Endpoint
+`GET /`
 
-By centralizing these complexities, `fast-saavn` allows client applications to simply request a song by title and artist, and receive a ready-to-use song object with playable download links, without needing to manage the intricacies of the JioSaavn API directly.
+### Query Parameters
 
-## Usage
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` | Yes | The title of the song. |
+| `artist` | `string` | Yes | The name of the artist. |
+| `duration` | `string` | No | The expected duration (e.g., `3:45` or `225`). Matches within a 2-second tolerance. |
 
-To use this API, send a `GET` request to the `/api/find` endpoint with `title` and `artist` query parameters.
-
-**Example Request:**
-```
-GET /api/find?title=Sapphire&artist=Ed%20Sheeran
+### Example Request
+```bash
+curl "https://fast-saavn.vercel.app/?title=Blinding+Lights&artist=The+Weeknd&duration=3:20"
 ```
 
-**Example Response (Success):**
-```json
-{
-  "id": "UMqOCaDY",
-  "name": "Sapphire",
-  "type": "song",
-  "year": "2025",
-  "releaseDate": null,
-  "duration": 179,
-  "label": "Gingerbread Man Records / Atlantic Records UK",
-  "explicitContent": true,
-  "playCount": 8178641,
-  "language": "english",
-  "hasLyrics": false,
-  "lyricsId": null,
-  "url": "https://www.jiosaavn.com/song/sapphire/JSUafjdRc2o",
-  "copyright": "Gingerbread Man Records and Atlantic Records UK release, under exclusive licence to Warner Music UK Limited, \u2117 2025 Ed Sheeran Limited",
-  "album": {
-    "id": "67953434",
-    "name": "Play",
-    "url": "https://www.jiosaavn.com/album/play/XIuzbN7P0XE_"
-  },
-  "artists": {
-    "primary": [
-      {
-        "id": "578407",
-        "name": "Ed Sheeran",
-        "role": "primary_artists",
-        "image": [ ... ],
-        "type": "artist",
-        "url": "https://www.jiosaavn.com/artist/ed-sheeran-songs/bWIDsVrU6DE_"
-      }
-    ],
-    "featured": [],
-    "all": [ ... ]
-  },
-  "image": [ ... ],
-  "downloadUrl": [
-    { "quality": "12kbps", "url": "..." },
-    { "quality": "48kbps", "url": "..." },
-    { "quality": "96kbps", "url": "..." },
-    { "quality": "160kbps", "url": "..." },
-    { "quality": "320kbps", "url": "..." }
-  ]
-}
+### Response
+Returns a `text/plain` response containing the media ID/path.
+
+**Success (200 OK):**
+```text
+342/65e9f0a2e7c9f3e4e9b9f9a2e7c9f3e4
+```
+*Note: You can construct the full URL by appending the quality, e.g., `https://aac.saavncdn.com/342/65e9f0a2e7c9f3e4e9b9f9a2e7c9f3e4_160.mp4`*
+
+**Error (404 Not Found):**
+```text
+Music stream not found in JioSaavn results
 ```
 
-**Example Response (Not Found):**
-```json
-"Music stream not found in JioSaavn results"
+**Error (400 Bad Request):**
+```text
+Missing title or artist parameters
 ```
 
 ## Development
 
-This project is built with Node.js and TypeScript, designed for deployment on Vercel.
+### Setup
 
-### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/fast-saavn.git
+   cd fast-saavn
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd fast-saavn
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
+### Local Execution
 
-### Local Development
-
-To run the API locally:
+Run the Vercel development server:
 ```bash
-npm run dev # Or your equivalent local development command
+npm start
 ```
 
-### Deployment to Vercel
+## Architecture
 
-Ensure your Vercel project is linked to this repository. Vercel will automatically deploy changes pushed to the main branch. Verify the `vercel.json` configuration for correct routing.
+- **`api/index.ts`**: The main and only entry point. Performs the search, matching, and response formatting.
+- **`api/_jioSaavn.ts`**: Internal utility for processing JioSaavn API responses. Prefixed with `_` to be ignored by Vercel's routing.
+- **`api/_*.ts`**: Self-contained TripleDES (DES-ECB) crypto utilities, moved from `api/crypto/` to the `api/` folder and prefixed with `_` for efficiency and to prevent exposure as API routes.
+- **Runtime**: Node.js on Vercel.
+
+## Deployment
+
+This project is designed to be deployed on **Vercel**.
+- The `vercel.json` ensures all requests are routed to the main API handler.
+- It includes aggressive caching with `s-maxage=86400` (1 day) and `stale-while-revalidate=3600` (1 hour).
+- It is pinned to the `bom1` region for proximity to JioSaavn's servers.
