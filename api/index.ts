@@ -1,4 +1,4 @@
-import { createSongPayload, SaavnSong, SongPayload } from './_jioSaavn';
+import { createSongPayload, SaavnSong, SongPayload } from './_jioSaavn.js';
 
 // --- Helper Functions ---
 
