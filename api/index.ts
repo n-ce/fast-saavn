@@ -1,6 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSongPayload, SaavnSong,SongPayload} from './_jioSaavn.js';
-
+import { createSongPayload, SaavnSong, SongPayload } from './_jioSaavn.ts';
 
 // --- Helper Functions ---
 
@@ -19,15 +17,16 @@ const parseDurationToSeconds = (durationStr: string): number | null => {
   return null;
 };
 
-// --- API Route Handler ---
+// --- API Route Handler (Vercel Bun Convention) ---
 
-export default async function (req: VercelRequest, res: VercelResponse) {
-  const title = req.query.title as string;
-  const artist = req.query.artist as string;
-  const durationParam = req.query.duration as string;
+export default async function handler(req: Request) {
+  const url = new URL(req.url);
+  const title = url.searchParams.get('title');
+  const artist = url.searchParams.get('artist');
+  const durationParam = url.searchParams.get('duration');
 
   if (!title || !artist) {
-    return res.status(400).send('Missing title or artist parameters');
+    return new Response('Missing title or artist parameters', { status: 400 });
   }
 
   // Sanitize title for search
@@ -49,7 +48,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     const data = await response.json() as { results: SaavnSong[] };
 
     if (!data.results || data.results.length === 0) {
-      return res.status(404).send('Music stream not found in JioSaavn results');
+      return new Response('Music stream not found in JioSaavn results', { status: 404 });
     }
 
     // Process results using the typed helper
@@ -87,19 +86,21 @@ export default async function (req: VercelRequest, res: VercelResponse) {
     });
 
     if (!matchingTrack || !matchingTrack.downloadUrl) {
-      return res.status(404).send('Music stream not found in JioSaavn results');
+      return new Response('Music stream not found in JioSaavn results', { status: 404 });
     }
 
     // Extract the base media ID from the decrypted URL
     const fullDownloadUrl: string = matchingTrack.downloadUrl;
     const trimmedDownloadUrl = fullDownloadUrl.replace(/^https:\/\/aac\.saavncdn\.com\/(.*?)_\d+\.mp4$/, '$1');
 
-    res.setHeader('Content-Type', 'text/plain');
-    return res.status(200).send(trimmedDownloadUrl);
+    return new Response(trimmedDownloadUrl, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' }
+    });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
     console.error("Error in fast-saavn API:", errorMessage);
-    return res.status(500).send(errorMessage);
+    return new Response(errorMessage, { status: 500 });
   }
 }

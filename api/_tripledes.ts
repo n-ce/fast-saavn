@@ -1,11 +1,11 @@
 import {
   WordArray,
-} from './_core.js';
+} from './_core.ts';
 import {
   BlockCipher,
   CipherObj,
   CipherCfg,
-} from './_cipher-core.js';
+} from './_cipher-core.ts';
 
 // Permuted Choice 1 constants
 const PC1 = [

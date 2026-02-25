@@ -1,8 +1,4 @@
-import { DES } from './_tripledes.js';
-import { Utf8 } from './_core.js';
-import { Base64 } from './_enc-base64.js';
-import { ECB } from './_mode-ecb.js';
-import { Pkcs7 } from './_cipher-core.js';
+import { createDecipheriv } from 'node:crypto';
 
 // --- Interfaces ---
 
@@ -54,39 +50,23 @@ export interface SongPayload {
 export const createDownloadLinks = (encryptedMediaUrl: string): string => {
   if (!encryptedMediaUrl) return "";
 
-  const key = '38346591';
+  const algorithm = 'des-ecb'; // The "flagged" algorithm
+  const key = Buffer.from('38346591', 'utf8');
 
   try {
-    // 1. Prepare key and ciphertext
-    // Using named exports directly avoids the 'Namespace' missing property error
-    const keyHex = Utf8.parse(key);
-    const cipherText = Base64.parse(encryptedMediaUrl);
+    // Bun allows 'des-ecb' natively; Node 17+ would block this without a flag.
+    const decipher = createDecipheriv(algorithm, key, null);
 
-    // 2. Decrypt with DES-ECB
-    // We cast the object as 'any' here specifically because the crypto-es 
-    // internal types for CipherParams are incompatible with a simple object literal
-    const decrypted = DES.decrypt(
-      { ciphertext: cipherText } as any,
-      keyHex,
-      {
-        mode: ECB,
-        padding: Pkcs7,
-      }
-    );
+    let decrypted = decipher.update(encryptedMediaUrl, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
 
-    // 3. Convert result to UTF-8
-    const decryptedText = decrypted.toString(Utf8);
-    if (!decryptedText) return "";
-
-    const cleanLink = decryptedText.trim();
-
-    // Ensure the link is served over HTTPS
-    return cleanLink.startsWith('http') ? cleanLink.replace('http:', 'https:') : "";
+    return decrypted.trim().replace('http:', 'https:');
   } catch (error) {
-    console.error("Decryption Error:", error);
     return "";
   }
 };
+
+
 
 export const createArtistMapPayload = (artist: SaavnArtist): ArtistPayload => ({
   id: artist.id,

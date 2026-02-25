@@ -1,6 +1,6 @@
 import {
   BlockCipherMode,
-} from './_cipher-core.js';
+} from './_cipher-core.ts';
 
 /**
  * ECB Encryptor
