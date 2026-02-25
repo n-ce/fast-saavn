@@ -2,8 +2,7 @@
   "name": "fast-saavn",
   "type": "module",
   "scripts": {
-    "start": "vercel dev",
-    "build": "bun build ./api/index.ts --outdir dist"
+    "start": "vercel dev"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",
